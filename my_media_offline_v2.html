@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#07111f">
+<title>My Media — Offline Glass Player v2</title>
+<style>
+:root{
+  --bg:#06101d; --bg2:#0c1b2e; --card:rgba(19,35,57,.72);
+  --card2:rgba(30,48,73,.62); --text:#f4f8ff; --muted:#91a4bf;
+  --accent:#4da3ff; --accent2:#8a7dff; --line:rgba(160,200,255,.18);
+  --shadow:0 18px 50px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:
+radial-gradient(circle at 15% 10%,rgba(40,123,255,.22),transparent 28%),
+radial-gradient(circle at 80% 35%,rgba(103,71,255,.18),transparent 30%),var(--bg);color:var(--text)}
+button,input{font:inherit}
+button{border:0;color:inherit;cursor:pointer}
+.app{max-width:1100px;margin:auto;min-height:100vh;padding:18px 18px 105px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand h1{margin:0;font-size:31px;letter-spacing:-1.3px}.brand h1 span{color:#7dbdff}
+.brand p{margin:2px 0 0;color:var(--muted);font-size:14px}
+.actions{display:flex;gap:10px}
+.iconbtn,.glassbtn{background:rgba(140,180,230,.12);border:1px solid var(--line);box-shadow:inset 0 1px rgba(255,255,255,.08),var(--shadow);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+.iconbtn{width:52px;height:52px;border-radius:50%;font-size:23px}
+.libraryHead{margin:30px 0 16px;padding:16px 18px;border-radius:23px;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(110deg,rgba(41,73,110,.65),rgba(19,34,54,.58));border:1px solid var(--line);backdrop-filter:blur(18px)}
+.libraryHead .folder{font-size:25px;margin-right:13px}.libraryHead b{font-size:18px}.chev{font-size:30px;color:#b8cae4}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.card{position:relative;overflow:hidden;border-radius:24px;background:linear-gradient(145deg,rgba(30,50,77,.78),rgba(12,24,40,.74));border:1px solid var(--line);box-shadow:0 16px 38px rgba(0,0,0,.28);padding:10px;transition:.2s}
+.card:hover{transform:translateY(-2px);border-color:rgba(77,163,255,.5)}
+.thumb{height:170px;border-radius:17px;overflow:hidden;position:relative;background:#102036}
+.thumb img,.thumb video{width:100%;height:100%;display:block;object-fit:cover}
+.thumb .shade{position:absolute;inset:0;background:linear-gradient(transparent 45%,rgba(0,0,0,.48))}
+.play{position:absolute;left:11px;bottom:10px;width:43px;height:43px;border-radius:50%;background:rgba(10,20,32,.7);border:1px solid rgba(255,255,255,.22);backdrop-filter:blur(10px);font-size:18px}
+.duration{position:absolute;right:9px;bottom:12px;padding:5px 8px;border-radius:9px;background:rgba(4,9,15,.65);font-size:12px}
+.info{padding:11px 6px 4px}.title{font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.meta{margin-top:7px;color:var(--muted);font-size:13px}
+.add{position:fixed;right:22px;bottom:90px;padding:12px 20px;border-radius:30px;background:linear-gradient(135deg,#6ab6ff,#8b79ff);box-shadow:0 10px 35px rgba(78,133,255,.38);font-weight:650;z-index:20}
+.add span{font-size:23px;vertical-align:-2px;margin-right:7px}
+.nav{position:fixed;left:50%;transform:translateX(-50%);bottom:12px;width:min(720px,calc(100% - 24px));display:grid;grid-template-columns:repeat(4,1fr);padding:8px;border-radius:27px;background:rgba(17,31,49,.82);border:1px solid var(--line);backdrop-filter:blur(22px);z-index:30}
+.nav button{background:transparent;color:#8fa2bc;padding:8px 4px;border-radius:18px}.nav button.active{color:#eaf4ff;background:rgba(90,160,255,.11)}.nav .nicon{display:block;font-size:22px}.nav small{font-size:11px}
+.empty{grid-column:1/-1;padding:50px 20px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:24px}
+.section{display:none}.section.active{display:block}
+.search{display:none;margin:16px 0}.search input{width:100%;padding:14px 17px;border-radius:18px;border:1px solid var(--line);outline:0;background:rgba(15,29,47,.72);color:var(--text)}
+.settings{display:grid;gap:14px}.setting{padding:18px;border:1px solid var(--line);border-radius:22px;background:var(--card);backdrop-filter:blur(18px)}.setting h3{margin:0 0 12px}.options{display:flex;flex-wrap:wrap;gap:9px}.option{padding:10px 14px;border-radius:14px;background:rgba(120,160,210,.1);border:1px solid var(--line)}.option.sel{background:rgba(77,163,255,.22);border-color:rgba(77,163,255,.6)}
+.player{position:fixed;inset:0;background:#000;z-index:100;display:none;flex-direction:column}.player.open{display:flex}
+.pvideo{position:relative;flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden}.pvideo video{width:100%;height:100%;object-fit:contain}
+.pbar{position:absolute;left:14px;right:14px;bottom:15px;z-index:3}.progress{width:100%;accent-color:var(--accent)}
+.controls{display:flex;align-items:center;gap:10px;padding:10px 14px 18px;background:linear-gradient(transparent,rgba(0,0,0,.95))}.ctrl{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.16);border-radius:14px;padding:9px 12px}.grow{flex:1}.time{font-size:12px;color:#c8d4e5}
+.playerTop{position:absolute;top:0;left:0;right:0;padding:15px;z-index:5;background:linear-gradient(rgba(0,0,0,.7),transparent)}.close{font-size:24px;background:rgba(0,0,0,.35);border-radius:50%;width:43px;height:43px}.ptitle{margin-left:12px;font-weight:600}
+.gestureHint{position:absolute;inset:0;pointer-events:none;display:flex;justify-content:space-between;align-items:center;padding:0 20px;color:rgba(255,255,255,.35);font-size:11px}.gestureHint div{width:30%;text-align:center}
+.toast{position:fixed;left:50%;bottom:105px;transform:translateX(-50%) translateY(15px);opacity:0;pointer-events:none;padding:10px 16px;border-radius:14px;background:rgba(8,17,29,.9);border:1px solid var(--line);z-index:200;transition:.2s}.toast.show{opacity:1;transform:translateX(-50%)}
+body.light{--bg:#eef4fb;--bg2:#fff;--card:rgba(255,255,255,.72);--card2:rgba(255,255,255,.7);--text:#102035;--muted:#62738b;--line:rgba(20,55,90,.14)}
+body.amoled{--bg:#000;--card:rgba(12,12,14,.9);--card2:rgba(18,18,20,.9);--line:rgba(255,255,255,.12)}
+body.purple{--accent:#bd83ff;--accent2:#ff70c7}
+body.green{--accent:#48e0a4;--accent2:#5eb6ff}
+@media(max-width:620px){.app{padding:15px 14px 105px}.brand h1{font-size:28px}.iconbtn{width:48px;height:48px}.grid{gap:10px}.thumb{height:125px}.card{padding:7px;border-radius:20px}.title{font-size:14px}.meta{font-size:11px}.add{right:14px}.libraryHead{margin-top:23px}}
+@media(min-width:900px){.thumb{height:210px}}
+</style>
+
+<style id="v2-style">
+/* ===== My Media v2 additions ===== */
+:root{
+  --accent:#4da3ff; --accent2:#8a7dff;
+  --accentSoft:rgba(77,163,255,.20);
+  --bgGlow1:rgba(40,123,255,.22); --bgGlow2:rgba(103,71,255,.18);
+  --glassTint:rgba(19,35,57,.72); --glassTint2:rgba(30,48,73,.62);
+}
+body{
+  background:
+    radial-gradient(circle at 15% 10%,var(--bgGlow1),transparent 28%),
+    radial-gradient(circle at 80% 35%,var(--bgGlow2),transparent 30%),var(--bg);
+}
+body.theme-red{
+  --accent:#ff6678; --accent2:#ff9b62; --accentSoft:rgba(255,92,106,.20);
+  --bgGlow1:rgba(255,55,75,.27); --bgGlow2:rgba(157,62,28,.23);
+  --glassTint:rgba(57,34,32,.74); --glassTint2:rgba(66,43,39,.64);
+}
+body.theme-purple{
+  --accent:#b782ff; --accent2:#ff72c6; --accentSoft:rgba(183,130,255,.20);
+  --bgGlow1:rgba(117,56,255,.25); --bgGlow2:rgba(255,62,184,.18);
+}
+body.theme-emerald{
+  --accent:#4be2a2; --accent2:#5ebcff; --accentSoft:rgba(75,226,162,.18);
+  --bgGlow1:rgba(18,178,125,.24); --bgGlow2:rgba(28,108,207,.18);
+}
+body.gradient-blue{
+  --accent:#4da3ff; --accent2:#8a7dff; --accentSoft:rgba(77,163,255,.20);
+  --bgGlow1:rgba(40,123,255,.26); --bgGlow2:rgba(103,71,255,.20);
+}
+body.gradient-red{
+  --accent:#ff6472; --accent2:#ffad63; --accentSoft:rgba(255,100,114,.21);
+  --bgGlow1:rgba(255,54,69,.28); --bgGlow2:rgba(255,130,48,.18);
+}
+body.gradient-orange{
+  --accent:#ff9b45; --accent2:#ff5d8f; --accentSoft:rgba(255,155,69,.20);
+  --bgGlow1:rgba(255,137,34,.25); --bgGlow2:rgba(255,67,112,.18);
+}
+body.gradient-green{
+  --accent:#48dda0; --accent2:#61b9ff; --accentSoft:rgba(72,221,160,.19);
+  --bgGlow1:rgba(20,185,125,.25); --bgGlow2:rgba(45,124,240,.17);
+}
+body.gradient-purple{
+  --accent:#a874ff; --accent2:#ff6dc4; --accentSoft:rgba(168,116,255,.20);
+  --bgGlow1:rgba(118,55,255,.25); --bgGlow2:rgba(247,66,182,.19);
+}
+body.gradient-cyan{
+  --accent:#38d9ff; --accent2:#6287ff; --accentSoft:rgba(56,217,255,.20);
+  --bgGlow1:rgba(19,191,235,.25); --bgGlow2:rgba(72,83,255,.18);
+}
+body.theme-red .libraryHead,
+body.theme-red .card{background:linear-gradient(145deg,rgba(70,45,41,.78),rgba(30,21,24,.76))}
+body.gradient-red .libraryHead,
+body.gradient-red .card,
+body.gradient-orange .libraryHead,
+body.gradient-orange .card{background:linear-gradient(145deg,rgba(59,38,39,.78),rgba(27,23,28,.76))}
+.card{border-color:color-mix(in srgb,var(--accent) 28%,rgba(160,200,255,.18))}
+.play,.add,.nav button.active,.option.sel{background:var(--accentSoft)}
+.add{background:linear-gradient(135deg,var(--accent),var(--accent2))}
+.nav button.active{color:#eef7ff}
+.nav{grid-template-columns:repeat(5,1fr)}
+.nicon{height:23px;display:grid!important;place-items:center}
+.nicon svg,.top svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.iconbtn{display:grid;place-items:center}
+.iconbtn svg{width:23px;height:23px}
+.settings{gap:12px}
+.profileCard{
+  padding:16px;border:1px solid var(--line);border-radius:24px;
+  background:linear-gradient(135deg,rgba(36,61,91,.70),rgba(14,26,43,.66));
+  display:flex;align-items:center;gap:14px;box-shadow:var(--shadow);backdrop-filter:blur(20px)
+}
+.profileAvatar{
+  width:58px;height:58px;border-radius:20px;display:grid;place-items:center;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:white;font-size:24px;font-weight:800;box-shadow:0 8px 25px color-mix(in srgb,var(--accent) 35%,transparent)
+}
+.profileText b{display:block;font-size:19px}.profileText span{display:block;color:var(--muted);font-size:13px;margin-top:3px}
+.settingRow{
+  width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:15px 16px;border-radius:18px;background:rgba(130,165,210,.07);border:1px solid var(--line);text-align:left
+}
+.settingRow .left{display:flex;align-items:center;gap:12px}.settingIcon{width:40px;height:40px;border-radius:13px;display:grid;place-items:center;background:var(--accentSoft);color:var(--accent)}
+.settingIcon svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.settingRow b{font-size:14px}.settingRow small{display:block;color:var(--muted);margin-top:3px}
+.chevronSmall{color:var(--muted);font-size:22px}
+.dialogBack{
+  position:fixed;inset:0;z-index:180;display:none;align-items:flex-end;justify-content:center;
+  background:rgba(0,0,0,.56);backdrop-filter:blur(7px)
+}
+.dialogBack.open{display:flex}
+.dialog{
+  width:min(680px,calc(100% - 20px));max-height:82vh;overflow:auto;margin:10px;
+  border:1px solid var(--line);border-radius:28px 28px 20px 20px;
+  background:linear-gradient(145deg,rgba(20,36,56,.96),rgba(8,18,30,.97));
+  box-shadow:0 25px 80px rgba(0,0,0,.55);padding:18px
+}
+body.light .dialog{background:rgba(248,251,255,.97)}
+.dialogHead{display:flex;align-items:center;justify-content:space-between;margin-bottom:15px}
+.dialogHead h3{margin:0;font-size:20px}.dialogClose{width:38px;height:38px;border-radius:50%;background:rgba(130,165,210,.12);border:1px solid var(--line)}
+.swatches{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.swatch{
+  min-height:82px;padding:12px;border-radius:18px;border:1px solid var(--line);
+  display:flex;align-items:flex-end;justify-content:space-between;position:relative;overflow:hidden
+}
+.swatch .dot{width:32px;height:32px;border-radius:50%;border:2px solid rgba(255,255,255,.55);box-shadow:0 4px 15px rgba(0,0,0,.25)}
+.swatch b{font-size:13px;text-shadow:0 1px 4px rgba(0,0,0,.35)}
+.swatch.selected{outline:2px solid var(--accent);outline-offset:1px}
+.menuWrap{position:relative}
+.moreBtn{position:absolute;right:10px;bottom:10px;width:34px;height:34px;border-radius:50%;background:rgba(4,10,18,.65);border:1px solid rgba(255,255,255,.14);font-size:19px;z-index:4}
+.mediaMenu{
+  position:absolute;right:9px;bottom:48px;z-index:12;min-width:170px;padding:6px;
+  border:1px solid var(--line);border-radius:16px;background:rgba(9,19,31,.96);
+  box-shadow:0 18px 40px rgba(0,0,0,.42);backdrop-filter:blur(18px)
+}
+.mediaMenu button{width:100%;padding:10px 12px;border-radius:11px;background:transparent;text-align:left}
+.mediaMenu button:hover{background:rgba(120,170,230,.12)}
+.mediaMenu .danger{color:#ff8e9a}
+.saveBadge{position:absolute;left:10px;top:10px;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:rgba(4,10,18,.68);font-size:15px;z-index:4}
+.empty b{color:var(--accent)}
+@media(max-width:420px){
+ .swatches{grid-template-columns:1fr}
+ .nav small{font-size:10px}
+ .nav .nicon{font-size:19px}
+}
+</style>
+
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div class="brand"><h1>My <span>Media</span></h1><p>Your personal library</p></div>
+    <div class="actions">
+<button class="iconbtn" id="searchBtn" aria-label="Search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.8"></circle><path d="m16.2 16.2 4.1 4.1"></path></svg></button>
+<button class="iconbtn" id="accountBtn" aria-label="Profile"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.3"></circle><path d="M5.2 20c.7-4 3-6 6.8-6s6.1 2 6.8 6"></path></svg></button>
+</div>
+  </div>
+
+  <main id="home" class="section active">
+    <div class="libraryHead"><div><span class="folder">▢</span><b>Your Library</b></div><span class="chev">›</span></div>
+    <div class="grid" id="recentGrid"></div>
+  </main>
+
+  <main id="library" class="section">
+    <div class="libraryHead"><div><span class="folder">▢</span><b>All Media</b></div><span id="count" class="chev">0</span></div>
+    <div class="grid" id="libraryGrid"></div>
+  </main>
+
+  <main id="downloads" class="section">
+    <div class="libraryHead"><div><span class="folder">↓</span><b>Downloads</b></div><span class="chev">✓</span></div>
+    <div class="grid" id="downloadGrid"></div>
+  </main>
+
+  <main id="saved" class="section">
+    <div class="libraryHead"><div><span class="folder">★</span><b>Saved Music</b></div><span id="savedCount" class="chev">0</span></div>
+    <div class="grid" id="savedGrid"></div>
+  </main>
+
+  <main id="settings" class="section">
+  <div class="libraryHead"><div><span class="folder">⚙</span><b>Settings</b></div></div>
+
+  <div class="profileCard">
+    <div class="profileAvatar">SM</div>
+    <div class="profileText"><b>Shreyas Mishra</b><span>My Media profile · Offline</span></div>
+  </div>
+
+  <div class="settings">
+    <div class="setting">
+      <button class="settingRow" id="themeOpen">
+        <div class="left"><span class="settingIcon">◐</span><div><b>Theme</b><small id="themeSummary">Blue Glass</small></div></div>
+        <span class="chevronSmall">›</span>
+      </button>
+    </div>
+
+    <div class="setting">
+      <button class="settingRow" id="gradientOpen">
+        <div class="left"><span class="settingIcon">✦</span><div><b>Color Gradient</b><small id="gradientSummary">Ocean Blue</small></div></div>
+        <span class="chevronSmall">›</span>
+      </button>
+    </div>
+
+    <div class="setting">
+      <button class="settingRow" id="audioBg">
+        <div class="left"><span class="settingIcon">♫</span><div><b>Background Audio</b><small>Keep audio playing when the app is minimized</small></div></div>
+        <span class="chevronSmall" id="audioState">ON</span>
+      </button>
+    </div>
+
+    <div class="setting">
+      <button class="settingRow" id="autoplay">
+        <div class="left"><span class="settingIcon">↻</span><div><b>Autoplay Next</b><small>Continue to the next saved item</small></div></div>
+        <span class="chevronSmall" id="autoplayState">OFF</span>
+      </button>
+    </div>
+
+    <div class="setting">
+      <button class="settingRow" id="clearAll">
+        <div class="left"><span class="settingIcon">⌫</span><div><b>Clear App Library</b><small>Remove all imported media permanently</small></div></div>
+        <span class="chevronSmall">›</span>
+      </button>
+    </div>
+  </div>
+</main>
+
+  <button class="add" id="addBtn"><span>＋</span>Add Media</button>
+
+  <nav class="nav">
+  <button class="active" data-page="home"><span class="nicon"><svg viewBox="0 0 24 24"><path d="m3 10 9-7 9 7"></path><path d="M5.5 9.5V21h13V9.5"></path><path d="M9 21v-6h6v6"></path></svg></span><small>Home</small></button>
+  <button data-page="library"><span class="nicon"><svg viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15.5A2.5 2.5 0 0 0 17.5 16H4z"></path><path d="M4 5.5V19a2 2 0 0 0 2 2h12"></path></svg></span><small>Library</small></button>
+  <button data-page="downloads"><span class="nicon"><svg viewBox="0 0 24 24"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M4 20h16"></path></svg></span><small>Downloads</small></button>
+  <button data-page="saved"><span class="nicon"><svg viewBox="0 0 24 24"><path d="M6 4.5A2.5 2.5 0 0 1 8.5 2h7A2.5 2.5 0 0 1 18 4.5V21l-6-3.5L6 21z"></path></svg></span><small>Saved</small></button>
+  <button data-page="settings"><span class="nicon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.8 1.8 0 0 0 .36 1.98l.05.05-1.7 1.7-.05-.05a1.8 1.8 0 0 0-1.98-.36 1.8 1.8 0 0 0-1.08 1.65V20h-2.4v-.07a1.8 1.8 0 0 0-1.08-1.65 1.8 1.8 0 0 0-1.98.36l-.05.05-1.7-1.7.05-.05A1.8 1.8 0 0 0 8.2 15a1.8 1.8 0 0 0-1.65-1.08H6v-2.4h.55A1.8 1.8 0 0 0 8.2 10a1.8 1.8 0 0 0-.36-1.98l-.05-.05 1.7-1.7.05.05a1.8 1.8 0 0 0 1.98.36A1.8 1.8 0 0 0 12.6 5.1V5h2.4v.1a1.8 1.8 0 0 0 1.08 1.63 1.8 1.8 0 0 0 1.98-.36l.05-.05 1.7 1.7-.05.05A1.8 1.8 0 0 0 19.4 10a1.8 1.8 0 0 0 1.65 1.08H21v2.4h-.55A1.8 1.8 0 0 0 19.4 15z"></path></svg></span><small>Settings</small></button>
+</nav>
+</div>
+
+<input id="fileInput" type="file" accept="video/*,audio/*" multiple hidden>
+<div class="toast" id="toast"></div>
+
+
+<!-- Theme chooser -->
+<div class="dialogBack" id="themeDialog">
+  <div class="dialog">
+    <div class="dialogHead"><h3>Choose Theme</h3><button class="dialogClose" data-close="themeDialog">×</button></div>
+    <div class="swatches" id="themeChoices"></div>
+  </div>
+</div>
+
+<!-- Gradient chooser -->
+<div class="dialogBack" id="gradientDialog">
+  <div class="dialog">
+    <div class="dialogHead"><h3>Choose Color Gradient</h3><button class="dialogClose" data-close="gradientDialog">×</button></div>
+    <div class="swatches" id="gradientChoices"></div>
+  </div>
+</div>
+
+<div class="player" id="player">
+  <div class="pvideo" id="gestureArea">
+    <video id="media" playsinline></video>
+    <div class="playerTop"><button class="close" id="closePlayer">×</button><span class="ptitle" id="playerTitle"></span></div>
+    <div class="gestureHint"><div>↕ Volume</div><div>Swipe → Seek<br>Swipe ↑/↓ on screen</div><div>↕ Brightness</div></div>
+    <div class="pbar"><input class="progress" id="progress" type="range" min="0" max="100" value="0"></div>
+  </div>
+  <div class="controls">
+    <button class="ctrl" id="back10">↶ 10</button><button class="ctrl" id="playBtn">▶</button><button class="ctrl" id="fwd10">10 ↷</button>
+    <span class="time" id="time">0:00 / 0:00</span><span class="grow"></span>
+    <button class="ctrl" id="speedBtn">1×</button><button class="ctrl" id="muteBtn">🔊</button><button class="ctrl" id="fullBtn">⛶</button>
+  </div>
+</div>
+
+<script>
+const DB='my-media-v1', STORE='media';
+let db, items=[], current=null, startX=0,startY=0,startVol=1,startBright=1;
+
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+function toast(t){let x=$('#toast');x.textContent=t;x.classList.add('show');setTimeout(()=>x.classList.remove('show'),1800)}
+function openDB(){return new Promise((res,rej)=>{let r=indexedDB.open(DB,1);r.onupgradeneeded=()=>r.result.createObjectStore(STORE,{keyPath:'id',autoIncrement:true});r.onsuccess=()=>{db=r.result;res(db)};r.onerror=()=>rej(r.error)})}
+function tx(mode){return db.transaction(STORE,mode).objectStore(STORE)}
+function getAll(){return new Promise((res,rej)=>{let r=tx('readonly').getAll();r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
+function addItem(o){return new Promise((res,rej)=>{let r=tx('readwrite').add(o);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
+function delItem(id){return new Promise((res,rej)=>{let r=tx('readwrite').delete(id);r.onsuccess=()=>res();r.onerror=()=>rej(r.error)})}
+function putItem(o){return new Promise((res,rej)=>{let r=tx('readwrite').put(o);r.onsuccess=()=>res();r.onerror=()=>rej(r.error)})}
+function clearDB(){return new Promise((res,rej)=>{let r=tx('readwrite').clear();r.onsuccess=()=>res();r.onerror=()=>rej(r.error)})}
+function fmt(s){if(!isFinite(s))return '0:00';let m=Math.floor(s/60),sec=Math.floor(s%60);return m+':'+String(sec).padStart(2,'0')}
+function isVideo(x){return x.type?.startsWith('video/')||x.kind==='video'}
+function card(x){
+  let url=URL.createObjectURL(x.blob);
+  let div=document.createElement('div');div.className='card';
+  let saved=x.saved?'★':'☆';
+  div.innerHTML=`<div class="thumb">${isVideo(x)?`<video src="${url}" muted preload="metadata"></video>`:`<div style="height:100%;display:grid;place-items:center;font-size:58px;background:radial-gradient(circle,#25496e,#0b1524)">♪</div>`}<div class="shade"></div><button class="play">▶</button><span class="duration">${fmt(x.duration)}</span>${x.saved?`<span class="saveBadge">★</span>`:''}<button class="moreBtn" aria-label="More">⋮</button><div class="mediaMenu" hidden><button data-action="play">▶ Play Video</button><button data-action="remove">⌂ Remove from Home</button><button data-action="save">${x.saved?'☆ Remove from Saved':'★ Save Video'}</button><button class="danger" data-action="delete">⌫ Delete Video</button></div></div><div class="info"><div class="title">${escapeHtml(x.name)}</div><div class="meta">${isVideo(x)?'▣ Video':'♪ Audio'} · ${new Date(x.added).toLocaleDateString()}</div></div>`;
+  div.querySelector('.play').onclick=()=>openPlayer(x);
+  div.querySelector('.thumb').onclick=e=>{if(!e.target.closest('.moreBtn')&&!e.target.closest('.mediaMenu')&&!e.target.classList.contains('play'))openPlayer(x)}
+  div.querySelector('.title').onclick=()=>openPlayer(x);
+
+  let more=div.querySelector('.moreBtn'), menu=div.querySelector('.mediaMenu');
+  more.onclick=e=>{e.stopPropagation(); $$('.mediaMenu').forEach(m=>{if(m!==menu)m.hidden=true}); menu.hidden=!menu.hidden};
+  menu.querySelector('[data-action="play"]').onclick=()=>{menu.hidden=true;openPlayer(x)};
+  menu.querySelector('[data-action="remove"]').onclick=async()=>{
+    menu.hidden=true; x.homeHidden=true; await putItem(x); await refresh(); toast('Removed from Home');
+  };
+  menu.querySelector('[data-action="save"]').onclick=async()=>{
+    menu.hidden=true; x.saved=!x.saved; await putItem(x); await refresh(); toast(x.saved?'Saved to Saved Music':'Removed from Saved Music');
+  };
+  menu.querySelector('[data-action="delete"]').onclick=async()=>{
+    menu.hidden=true;
+    if(confirm('Delete this video from My Media permanently?')){await delItem(x.id);await refresh();toast('Video deleted')}
+  };
+  return div;
+}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+function render(){
+  items.sort((a,b)=>b.added-a.added); $('#count').textContent=items.length;
+  for(let id of ['recentGrid','libraryGrid','downloadGrid','savedGrid']) $('#'+id).innerHTML='';
+  let recent=items.filter(x=>!x.homeHidden).slice(0,8);
+  let saved=items.filter(x=>x.saved);
+  $('#savedCount').textContent=saved.length;
+  [['recentGrid',recent],['libraryGrid',items],['downloadGrid',items],['savedGrid',saved]].forEach(([id,arr])=>{
+    let g=$('#'+id); if(!arr.length){g.innerHTML='<div class="empty">No media here yet.<br><br>Use <b>Add Media</b> or the ⋮ menu on a media card.</div>';return}
+    arr.forEach(x=>g.appendChild(card(x)));
+  });
+}
+async function refresh(){items=await getAll();render()}
+async function importFiles(files){
+  for(const f of files){
+    if(!f.type.startsWith('video/')&&!f.type.startsWith('audio/'))continue;
+    let duration=0;
+    try{duration=await getDuration(f)}catch(e){}
+    await addItem({name:f.name.replace(/\.[^.]+$/,''),type:f.type,kind:f.type.startsWith('video/')?'video':'audio',blob:f,duration,added:Date.now(),homeHidden:false,saved:false});
+  }
+  await refresh();toast('Media added to your offline library');
+}
+function getDuration(f){return new Promise(resolve=>{let u=URL.createObjectURL(f),v=document.createElement(f.type.startsWith('video/')?'video':'audio');v.preload='metadata';v.onloadedmetadata=()=>{URL.revokeObjectURL(u);resolve(v.duration||0)};v.onerror=()=>{URL.revokeObjectURL(u);resolve(0)};v.src=u})}
+function showPage(page){$$('.section').forEach(x=>x.classList.remove('active'));let target=$('#'+page);if(!target)return;target.classList.add('active');$$('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===page))}
+
+const THEME_LIST=[
+  {id:'default',name:'Blue Glass',bg:'linear-gradient(135deg,#07111f,#163b68)',dot:'#4da3ff',cls:''},
+  {id:'light',name:'White',bg:'linear-gradient(135deg,#ffffff,#dfeaf8)',dot:'#4d8fff',cls:'light'},
+  {id:'amoled',name:'AMOLED Black',bg:'linear-gradient(135deg,#000,#111)',dot:'#ffffff',cls:'amoled'},
+  {id:'theme-red',name:'Red Glass',bg:'linear-gradient(135deg,#241316,#6b2f2c)',dot:'#ff6678',cls:'theme-red'},
+  {id:'theme-purple',name:'Purple Glass',bg:'linear-gradient(135deg,#161027,#51266e)',dot:'#b782ff',cls:'theme-purple'},
+  {id:'theme-emerald',name:'Emerald Glass',bg:'linear-gradient(135deg,#071c18,#155548)',dot:'#4be2a2',cls:'theme-emerald'}
+];
+const GRADIENT_LIST=[
+  {id:'gradient-blue',name:'Ocean Blue',bg:'linear-gradient(135deg,#1674ff,#8a7dff)',dot:'#4da3ff'},
+  {id:'gradient-red',name:'Ruby Red',bg:'linear-gradient(135deg,#e62d4f,#ffad63)',dot:'#ff6472'},
+  {id:'gradient-orange',name:'Sunset Orange',bg:'linear-gradient(135deg,#ff8b2d,#ff4e8a)',dot:'#ff9b45'},
+  {id:'gradient-green',name:'Emerald Green',bg:'linear-gradient(135deg,#16c98d,#4aa7ff)',dot:'#48dda0'},
+  {id:'gradient-purple',name:'Royal Violet',bg:'linear-gradient(135deg,#7c3aed,#ff55bb)',dot:'#a874ff'},
+  {id:'gradient-cyan',name:'Crystal Cyan',bg:'linear-gradient(135deg,#11cbe8,#617cff)',dot:'#38d9ff'}
+];
+function setVisualClass(themeId,gradientId){
+  document.body.className='';
+  let t=THEME_LIST.find(x=>x.id===themeId)||THEME_LIST[0];
+  if(t.cls) document.body.classList.add(t.cls);
+  document.body.classList.add(gradientId||'gradient-blue');
+}
+function renderChoices(){
+  $('#themeChoices').innerHTML=THEME_LIST.map(t=>`<button class="swatch ${localStorage.themeId===t.id?'selected':''}" data-theme="${t.id}" style="background:${t.bg}"><b>${t.name}</b><span class="dot" style="background:${t.dot}"></span></button>`).join('');
+  $('#gradientChoices').innerHTML=GRADIENT_LIST.map(g=>`<button class="swatch ${localStorage.gradientId===g.id?'selected':''}" data-gradient="${g.id}" style="background:${g.bg}"><b>${g.name}</b><span class="dot" style="background:${g.dot}"></span></button>`).join('');
+}
+function applyPreferences(){
+  let t=localStorage.themeId||'default', g=localStorage.gradientId||'gradient-blue';
+  setVisualClass(t,g);
+  $('#themeSummary').textContent=(THEME_LIST.find(x=>x.id===t)||THEME_LIST[0]).name;
+  $('#gradientSummary').textContent=(GRADIENT_LIST.find(x=>x.id===g)||GRADIENT_LIST[0]).name;
+  $('#audioState').textContent=localStorage.bgAudio==='off'?'OFF':'ON';
+  $('#autoplayState').textContent=localStorage.autoplay==='on'?'ON':'OFF';
+  renderChoices();
+}
+$('#themeOpen').onclick=()=>{$('#themeDialog').classList.add('open');renderChoices()};
+$('#gradientOpen').onclick=()=>{$('#gradientDialog').classList.add('open');renderChoices()};
+$$('.dialogClose').forEach(b=>b.onclick=()=>$('#'+b.dataset.close).classList.remove('open'));
+$$('.dialogBack').forEach(d=>d.addEventListener('click',e=>{if(e.target===d)d.classList.remove('open')}));
+document.addEventListener('click',e=>{$$('.mediaMenu').forEach(m=>{if(!m.parentElement.contains(e.target))m.hidden=true})});
+
+document.addEventListener('click',async e=>{
+  let tb=e.target.closest('[data-theme]');
+  if(tb){
+    localStorage.themeId=tb.dataset.theme;
+    applyPreferences();
+    $('#themeDialog').classList.remove('open');
+    toast('Theme changed');
+  }
+  let gb=e.target.closest('[data-gradient]');
+  if(gb){
+    localStorage.gradientId=gb.dataset.gradient;
+    applyPreferences();
+    $('#gradientDialog').classList.remove('open');
+    toast('Color gradient changed');
+  }
+});
+$('#audioBg').onclick=()=>{localStorage.bgAudio=localStorage.bgAudio==='off'?'on':'off';applyPreferences()};
+$('#autoplay').onclick=()=>{localStorage.autoplay=localStorage.autoplay==='on'?'off':'on';applyPreferences()};
+$('#clearAll').onclick=async()=>{if(confirm('Remove all imported media from this app?')){await clearDB();await refresh();toast('Library cleared')}};
+
+(async()=>{
+  try{
+    await openDB();
+    /* v2 migration: old v1 records remain intact and simply receive the new flags. */
+    let all=await getAll(), changed=false;
+    for(let x of all){
+      if(typeof x.homeHidden==='undefined'){x.homeHidden=false;changed=true}
+      if(typeof x.saved==='undefined'){x.saved=false;changed=true}
+      if(changed) await putItem(x);
+    }
+    applyPreferences();
+    await refresh();
+  }catch(e){toast('Local storage unavailable in this browser')}
+})();
+</script>
+</body>
+</html>
